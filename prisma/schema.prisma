@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  password  String
+  bio       String?
+  avatarUrl String?
+  posts     Post[]
+  comments  Comment[]
+  likes     Like[]
+  followers Follow[]  @relation("Followers")
+  following Follow[]  @relation("Following")
+  notificationsReceived Notification[] @relation("UserNotifications")
+  notificationsTriggered Notification[] @relation("NotificationActor")
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  content   String
+  mediaUrl  String?
+  mediaType String?
+  createdAt DateTime  @default(now())
+  authorId  Int
+  author    User      @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  likes     Like[]
+  notifications Notification[]
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model Like {
+  id     Int  @id @default(autoincrement())
+  postId Int
+  post   Post @relation(fields: [postId], references: [id])
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+  @@unique([postId, userId])
+}
+
+model Follow {
+  id          Int  @id @default(autoincrement())
+  followerId  Int
+  follower    User @relation("Following", fields: [followerId], references: [id])
+  followingId Int
+  following   User @relation("Followers", fields: [followingId], references: [id])
+  @@unique([followerId, followingId])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      
+  user      User     @relation("UserNotifications", fields: [userId], references: [id])
+  type      String   // 'LIKE', 'COMMENT', 'FOLLOW'
+  actorId   Int
+  actor     User     @relation("NotificationActor", fields: [actorId], references: [id])
+  postId    Int?
+  post      Post?    @relation(fields: [postId], references: [id])
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
